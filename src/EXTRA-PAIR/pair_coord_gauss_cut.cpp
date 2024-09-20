@@ -363,8 +363,8 @@ void PairCoordGaussCut::write_restart(FILE *fp)
         fwrite(&cut[i][j],sizeof(double),1,fp);
         fwrite(&coord[i][j],sizeof(double),1,fp);
         fwrite(&rnh[i][j],sizeof(double),1,fp);
-        fwrite(&types[i][j],sizeof(int),1,fp);
-        fwrite(&types[j][i],sizeof(int),1,fp);
+        fwrite(&types[i][j],sizeof(double),1,fp);
+        fwrite(&types[j][i],sizeof(double),1,fp);
       }
     }
 }
@@ -401,8 +401,8 @@ void PairCoordGaussCut::read_restart(FILE *fp)
         MPI_Bcast(&cut[i][j],1,MPI_DOUBLE,0,world);
         MPI_Bcast(&coord[i][j],1,MPI_DOUBLE,0,world);
         MPI_Bcast(&rnh[i][j],1,MPI_DOUBLE,0,world);
-        MPI_Bcast(&types[i][j],1,MPI_INT,0,world);
-        MPI_Bcast(&types[j][i],1,MPI_INT,0,world);
+        MPI_Bcast(&types[i][j],1,MPI_DOUBLE,0,world);
+        MPI_Bcast(&types[j][i],1,MPI_DOUBLE,0,world);
       }
     }
 }
@@ -442,7 +442,7 @@ void PairCoordGaussCut::read_restart_settings(FILE *fp)
 void PairCoordGaussCut::write_data(FILE *fp)
 {
   for (int i = 1; i <= atom->ntypes; i++)
-    fprintf(fp,"%d %g %g %g %g %g\n",i,hgauss[i][i],rmh[i][i],sigmah[i][i],coord[i][i], rnh[i][i]);
+    fprintf(fp,"%d %g %g %g\n",i,hgauss[i][i],rmh[i][i],sigmah[i][i]);
 }
 
 /* ----------------------------------------------------------------------

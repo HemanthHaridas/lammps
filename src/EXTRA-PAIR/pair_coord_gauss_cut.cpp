@@ -145,8 +145,6 @@ void PairCoordGaussCut::compute(int eflag, int vflag)
       }
     }
     
-    if (newton_pair) comm->reverse_comm(this);
-    
     // second loop to get the energies and forces
     for (jj = 0; jj < jnum; jj++) {
       j = jlist[jj];

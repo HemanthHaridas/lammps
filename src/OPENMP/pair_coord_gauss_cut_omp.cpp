@@ -172,14 +172,14 @@ void PairCoordGaussCutOMP::eval(int iifrom, int iito, ThrData * const thr)
         rexp = (r-rmh[itype][jtype])/sigmah[itype][jtype];
         if (coord_tmp[ii][jtype] <= coord[itype][jtype])
         {
-            double scale_factor = coord_tmp[ii][jtype] / coord[itype][jtype];
-            ugauss = scale_factor * hgauss[itype][jtype] * exp(-0.5*rexp*rexp) / sqrt(MY_2PI)/ sigmah[itype][jtype];
+            double scale_factor = (coord_tmp[ii][jtype] / coord[itype][jtype]) * hgauss[itype][jtype];
+            ugauss = (scale_factor / sqrt(MY_2PI)/ sigmah[itype][jtype]) * exp(-0.5*rexp*rexp);
         }
         else
         {
             double pre_exponent = coord_tmp[ii][jtype] - coord[itype][jtype];
-            double scale_factor = exp(-1*pre_exponent*pre_exponent);
-            ugauss = scale_factor * hgauss[itype][jtype] * exp(-0.5*rexp*rexp) / sqrt(MY_2PI) / sigmah[itype][jtype];
+            double scale_factor = exp(-1*pre_exponent*pre_exponent) * hgauss[itype][jtype];
+            ugauss = (scale_factor / sqrt(MY_2PI)/ sigmah[itype][jtype]) * exp(-0.5*rexp*rexp);
         }
         
         ugauss = pgauss[itype][jtype]*exp(-0.5*rexp*rexp);

@@ -39,6 +39,8 @@ PairCoordGaussCut::PairCoordGaussCut(LAMMPS *lmp) : Pair(lmp)
 {
   respa_enable = 0;
   writedata = 1;
+  comm_forward = 1;
+  comm_reverse = 1;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -143,6 +145,8 @@ void PairCoordGaussCut::compute(int eflag, int vflag)
       }
     }
     
+    if (newton_pair) comm->reverse_comm(this);
+    
     // second loop to get the energies and forces
     for (jj = 0; jj < jnum; jj++) {
       j = jlist[jj];
@@ -161,14 +165,14 @@ void PairCoordGaussCut::compute(int eflag, int vflag)
 
         if (coord_tmp[ii][jtype] <= coord[itype][jtype])
         {
-            double scale_factor = coord_tmp[ii][jtype] / coord[itype][jtype];
-            ugauss = scale_factor * hgauss[itype][jtype] * exp(-0.5*rexp*rexp) / sqrt(MY_2PI)/ sigmah[itype][jtype];
+            double scale_factor = (coord_tmp[ii][jtype] / coord[itype][jtype]) * hgauss[itype][jtype];
+            ugauss = (scale_factor / sqrt(MY_2PI)/ sigmah[itype][jtype]) * exp(-0.5*rexp*rexp);
         }
         else
         {
             double pre_exponent = coord_tmp[ii][jtype] - coord[itype][jtype];
-            double scale_factor = exp(-1*pre_exponent*pre_exponent);
-            ugauss = scale_factor * hgauss[itype][jtype] * exp(-0.5*rexp*rexp) / sqrt(MY_2PI) / sigmah[itype][jtype];
+            double scale_factor = exp(-1*pre_exponent*pre_exponent) * hgauss[itype][jtype];
+            ugauss = (scale_factor / sqrt(MY_2PI)/ sigmah[itype][jtype]) * exp(-0.5*rexp*rexp);
         }
 
         fpair = factor_lj*rexp/r*ugauss/sigmah[itype][jtype];
@@ -192,7 +196,6 @@ void PairCoordGaussCut::compute(int eflag, int vflag)
       }
     }
   }
-
   if (vflag_fdotr) virial_fdotr_compute();
 }
 
@@ -280,7 +283,7 @@ void PairCoordGaussCut::coeff(int narg, char **arg)
       types[j][i] = jlo;
       setflag[i][j] = 1;
 
-    //   std::cout << i << "\t" << j << "\t" << hgauss[i][j] << "\t" << sigmah[i][j] << "\t" << rmh[i][j] << "\t" << cut[i][j] << "\t" << coord[i][j] << "\t" << rnh[i][j] << "\t" << types[i][j] << "\t" << types[j][i] << "\n";
+      // std::cout << i << "\t" << j << "\t" << hgauss[i][j] << "\t" << sigmah[i][j] << "\t" << rmh[i][j] << "\t" << cut[i][j] << "\t" << coord[i][j] << "\t" << rnh[i][j] << "\t" << types[i][j] << "\t" << types[j][i] << "\n";
       count++;
     }
   }

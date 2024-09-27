@@ -62,8 +62,10 @@ PairCoordGaussCut::~PairCoordGaussCut()
     // Required for coordination number
     memory->destroy(coord_low);
     memory->destroy(weight_low);
+    memory->destroy(sigma_low);
     memory->destroy(coord_high);
     memory->destroy(weight_high);
+    memory->destroy(sigma_high);
     memory->destroy(rnh);
     memory->destroy(types);
   }
@@ -226,8 +228,8 @@ void PairCoordGaussCut::allocate()
   memory->create(coord_high,n+1,n+1,"pair:coord_high");  
   memory->create(weight_low,n+1,n+1,"pair:weight_low");
   memory->create(weight_high,n+1,n+1,"pair:weight_high");
-  memory->create(weight_low,n+1,n+1,"pair:sigma_low");
-  memory->create(weight_high,n+1,n+1,"pair:sigma_high");
+  memory->create(sigma_low,n+1,n+1,"pair:sigma_low");
+  memory->create(sigma_high,n+1,n+1,"pair:sigma_high");
   memory->create(rnh,n+1,n+1,"pair:rnh");
   memory->create(types,n+1,n+1,"pair:types");
 }

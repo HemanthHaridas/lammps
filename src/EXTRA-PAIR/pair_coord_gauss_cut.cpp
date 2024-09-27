@@ -165,10 +165,10 @@ void PairCoordGaussCut::compute(int eflag, int vflag)
         rexp = (r-rmh[itype][jtype])/sigmah[itype][jtype];
 
         // calculate scaling factors
-        double pre_exponent_one = coord_tmp[ii][jtype] - coord_low[itype][jtype];
-        double pre_exponent_two = coord_tmp[ii][jtype] - coord_high[itype][jtype];
-        double scale_factor_one = exp(-1*pre_exponent_one*pre_exponent_one)*weight_low[itype][jtype];
-        double scale_factor_two = exp(-1*pre_exponent_two*pre_exponent_two)*weight_high[itype][jtype];
+        double pre_exponent_one = (coord_tmp[ii][jtype] - coord_low[itype][jtype])/sigma_low[itype][jtype];
+        double pre_exponent_two = (coord_tmp[ii][jtype] - coord_high[itype][jtype])/sigma_high[itype][jtype];
+        double scale_factor_one = exp(-0.5*pre_exponent_one*pre_exponent_one)*weight_low[itype][jtype];
+        double scale_factor_two = exp(-0.5*pre_exponent_two*pre_exponent_two)*weight_high[itype][jtype];
         double scale_factor = (scale_factor_one + scale_factor_two)*hgauss[itype][jtype];
 
         // now calculate energy
@@ -226,6 +226,8 @@ void PairCoordGaussCut::allocate()
   memory->create(coord_high,n+1,n+1,"pair:coord_high");  
   memory->create(weight_low,n+1,n+1,"pair:weight_low");
   memory->create(weight_high,n+1,n+1,"pair:weight_high");
+  memory->create(weight_low,n+1,n+1,"pair:sigma_low");
+  memory->create(weight_high,n+1,n+1,"pair:sigma_high");
   memory->create(rnh,n+1,n+1,"pair:rnh");
   memory->create(types,n+1,n+1,"pair:types");
 }
@@ -252,7 +254,7 @@ void PairCoordGaussCut::settings(int narg, char **arg)
 
 void PairCoordGaussCut::coeff(int narg, char **arg)
 {
-  if (narg < 10 || narg > 11) error->all(FLERR,"Incorrect args for pair coefficients");
+  if (narg < 12 || narg > 13) error->all(FLERR,"Incorrect args for pair coefficients");
   if (!allocated) allocate();
 
   int ilo,ihi,jlo,jhi;
@@ -264,16 +266,18 @@ void PairCoordGaussCut::coeff(int narg, char **arg)
   double sigmah_one = utils::numeric(FLERR,arg[4],false,lmp);
   double coord_one_low = utils::numeric(FLERR,arg[5],false,lmp);
   double weight_one_low = utils::numeric(FLERR,arg[6],false,lmp);
-  double coord_one_high = utils::numeric(FLERR,arg[7],false,lmp);
-  double weight_one_high = utils::numeric(FLERR,arg[8],false,lmp);
-  double rnh_one = utils::numeric(FLERR,arg[9],false,lmp);
+  double sigma_one_low = utils::numeric(FLERR,arg[7],false,lmp);
+  double coord_one_high = utils::numeric(FLERR,arg[8],false,lmp);
+  double weight_one_high = utils::numeric(FLERR,arg[9],false,lmp);
+  double sigma_one_high = utils::numeric(FLERR,arg[10],false,lmp);
+  double rnh_one = utils::numeric(FLERR,arg[11],false,lmp);
 
   if (sigmah_one <= 0.0)
     error->all(FLERR,"Incorrect args for pair coefficients");
 
 
   double cut_one = cut_global;
-  if (narg == 11) cut_one = utils::numeric(FLERR,arg[10],false,lmp);
+  if (narg == 13) cut_one = utils::numeric(FLERR,arg[12],false,lmp);
 
   int count = 0;
   for (int i = ilo; i <= ihi; i++) {
@@ -285,15 +289,17 @@ void PairCoordGaussCut::coeff(int narg, char **arg)
 
       coord_low[i][j] = coord_one_low;
       weight_low[i][j] = weight_one_low;
+      sigma_low[i][j] = sigma_one_low;
       coord_high[i][j] = coord_one_high;
       weight_high[i][j] = weight_one_high;
+      sigma_high[i][j] = sigma_one_high;
 
       rnh[i][j] = rnh_one;
       types[i][j] = ilo;
       types[j][i] = jlo;
       setflag[i][j] = 1;
 
-      std::cout << i << "\t" << j << "\t" << hgauss[i][j] << "\t" << sigmah[i][j] << "\t" << rmh[i][j] << "\t" << cut[i][j] << "\t" << coord_low[i][j] << "\t" << coord_high[i][j] << "\t" << rnh[i][j] << "\t" << types[i][j] << "\t" << types[j][i] << "\n";
+      // std::cout << i << "\t" << j << "\t" << hgauss[i][j] << "\t" << sigmah[i][j] << "\t" << rmh[i][j] << "\t" << cut[i][j] << "\t" << coord_low[i][j] << "\t" << coord_high[i][j] << "\t" << rnh[i][j] << "\t" << types[i][j] << "\t" << types[j][i] << "\n";
       count++;
     }
   }
@@ -339,6 +345,8 @@ double PairCoordGaussCut::init_one(int i, int j)
   coord_high[j][i] = coord_high[i][j];
   weight_low[j][i] = weight_low[i][j];
   weight_high[j][i] = weight_high[i][j];
+  sigma_low[j][i] = sigma_low[i][j];
+  sigma_high[j][i] = sigma_high[i][j];
   rnh[j][i] = rnh[i][j];
 
   // compute I,J contribution to long-range tail correction

@@ -170,10 +170,10 @@ void PairCoordGaussCutOMP::eval(int iifrom, int iito, ThrData * const thr)
       if (rsq < cutsq[itype][jtype] && itype == types[itype][jtype] && jtype == types[jtype][itype] && itype <= jtype) {
 
         // calculate scaling factors
-        double pre_exponent_one = coord_tmp[ii][jtype] - coord_low[itype][jtype];
-        double pre_exponent_two = coord_tmp[ii][jtype] - coord_high[itype][jtype];
-        double scale_factor_one = exp(-1*pre_exponent_one*pre_exponent_one)*weight_low[itype][jtype];
-        double scale_factor_two = exp(-1*pre_exponent_two*pre_exponent_two)*weight_high[itype][jtype];
+        double pre_exponent_one = (coord_tmp[ii][jtype] - coord_low[itype][jtype])/sigma_low[itype][jtype];
+        double pre_exponent_two = (coord_tmp[ii][jtype] - coord_high[itype][jtype])/sigma_high[itype][jtype];
+        double scale_factor_one = exp(-0.5*pre_exponent_one*pre_exponent_one)*weight_low[itype][jtype];
+        double scale_factor_two = exp(-0.5*pre_exponent_two*pre_exponent_two)*weight_high[itype][jtype];
         double scale_factor = (scale_factor_one + scale_factor_two)*hgauss[itype][jtype];
 
         // now calculate energy

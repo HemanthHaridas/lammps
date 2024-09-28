@@ -61,11 +61,11 @@ PairCoordGaussCut::~PairCoordGaussCut()
 
     // Required for coordination number
     memory->destroy(coord_low);
-    memory->destroy(weight_low);
-    memory->destroy(sigma_low);
-    memory->destroy(coord_high);
-    memory->destroy(weight_high);
-    memory->destroy(sigma_high);
+    // memory->destroy(weight_low);
+    // memory->destroy(sigma_low);
+    // memory->destroy(coord_high);
+    // memory->destroy(weight_high);
+    // memory->destroy(sigma_high);
     memory->destroy(rnh);
     memory->destroy(types);
   }
@@ -90,6 +90,7 @@ void PairCoordGaussCut::compute(int eflag, int vflag)
 
   // These are new variables required for coord/gauss/cut
   double factor_coord, coord_nr, coord_dr;
+  double scale_factor;
 
   evdwl = 0.0;
   ev_init(eflag,vflag);
@@ -166,16 +167,27 @@ void PairCoordGaussCut::compute(int eflag, int vflag)
         r = sqrt(rsq);
         rexp = (r-rmh[itype][jtype])/sigmah[itype][jtype];
 
+        if (coord_tmp[ii][jtype] <= coord_low[itype][jtype])
+        {
+          scale_factor = (coord_tmp[ii][jtype]/coord_low[itype][jtype])*hgauss[itype][jtype];
+          ugauss = (scale_factor/ sqrt(MY_2PI) / sigmah[itype][jtype]) * exp(-0.5*rexp*rexp);
+        }
+        else
+        {
+          double pre_exponent = (coord_tmp[ii][jtype] - coord_low[itype][jtype]);
+          scale_factor = exp(-1.0*pre_exponent*pre_exponent)*hgauss[itype][jtype];
+          ugauss = (scale_factor/ sqrt(MY_2PI) / sigmah[itype][jtype]) * exp(-0.5*rexp*rexp);
+        }
+
         // calculate scaling factors
-        double pre_exponent_one = (coord_tmp[ii][jtype] - coord_low[itype][jtype])/sigma_low[itype][jtype];
-        double pre_exponent_two = (coord_tmp[ii][jtype] - coord_high[itype][jtype])/sigma_high[itype][jtype];
-        double scale_factor_one = exp(-0.5*pre_exponent_one*pre_exponent_one)*weight_low[itype][jtype];
-        double scale_factor_two = exp(-0.5*pre_exponent_two*pre_exponent_two)*weight_high[itype][jtype];
-        double scale_factor = (scale_factor_one + scale_factor_two)*hgauss[itype][jtype];
+        // double pre_exponent_one = (coord_tmp[ii][jtype] - coord_low[itype][jtype])/sigma_low[itype][jtype];
+        // double pre_exponent_two = (coord_tmp[ii][jtype] - coord_high[itype][jtype])/sigma_high[itype][jtype];
+        // double scale_factor_one = exp(-0.5*pre_exponent_one*pre_exponent_one)*weight_low[itype][jtype];
+        // double scale_factor_two = exp(-0.5*pre_exponent_two*pre_exponent_two)*weight_high[itype][jtype];
+        // double scale_factor = (scale_factor_one + scale_factor_two)*hgauss[itype][jtype];
 
         // now calculate energy
-        ugauss = (scale_factor/ sqrt(MY_2PI) / sigmah[itype][jtype]) * exp(-0.5*rexp*rexp);
-        // std::cout << ii << "\t" << itype << "\t" << jj << "\t" << jtype << "\t" << ugauss << "\t" << coord_tmp[ii][jtype] << "\t" << r << "\t" << scale_factor_one << "\t" << weight_low[itype][jtype] << "\t" << weight_high[itype][jtype] << "\t" << scale_factor_two << "\n";
+        // std::cout << ii << "\t" << itype << "\t" << jj << "\t" << jtype << "\t" << ugauss << "\t" << coord_tmp[ii][jtype] << "\t" << r << "\t" << scale_factor << "\n";
 
         fpair = factor_lj*rexp/r*ugauss/sigmah[itype][jtype];
     
@@ -225,11 +237,11 @@ void PairCoordGaussCut::allocate()
   memory->create(offset,n+1,n+1,"pair:offset");
 
   memory->create(coord_low,n+1,n+1,"pair:coord_low");
-  memory->create(coord_high,n+1,n+1,"pair:coord_high");  
-  memory->create(weight_low,n+1,n+1,"pair:weight_low");
-  memory->create(weight_high,n+1,n+1,"pair:weight_high");
-  memory->create(sigma_low,n+1,n+1,"pair:sigma_low");
-  memory->create(sigma_high,n+1,n+1,"pair:sigma_high");
+  // memory->create(coord_high,n+1,n+1,"pair:coord_high");  
+  // memory->create(weight_low,n+1,n+1,"pair:weight_low");
+  // memory->create(weight_high,n+1,n+1,"pair:weight_high");
+  // memory->create(sigma_low,n+1,n+1,"pair:sigma_low");
+  // memory->create(sigma_high,n+1,n+1,"pair:sigma_high");
   memory->create(rnh,n+1,n+1,"pair:rnh");
   memory->create(types,n+1,n+1,"pair:types");
 }
@@ -256,7 +268,7 @@ void PairCoordGaussCut::settings(int narg, char **arg)
 
 void PairCoordGaussCut::coeff(int narg, char **arg)
 {
-  if (narg < 12 || narg > 13) error->all(FLERR,"Incorrect args for pair coefficients");
+  if (narg < 7 || narg > 8) error->all(FLERR,"Incorrect args for pair coefficients");
   if (!allocated) allocate();
 
   int ilo,ihi,jlo,jhi;
@@ -267,19 +279,19 @@ void PairCoordGaussCut::coeff(int narg, char **arg)
   double rmh_one = utils::numeric(FLERR,arg[3],false,lmp);
   double sigmah_one = utils::numeric(FLERR,arg[4],false,lmp);
   double coord_one_low = utils::numeric(FLERR,arg[5],false,lmp);
-  double weight_one_low = utils::numeric(FLERR,arg[6],false,lmp);
-  double sigma_one_low = utils::numeric(FLERR,arg[7],false,lmp);
-  double coord_one_high = utils::numeric(FLERR,arg[8],false,lmp);
-  double weight_one_high = utils::numeric(FLERR,arg[9],false,lmp);
-  double sigma_one_high = utils::numeric(FLERR,arg[10],false,lmp);
-  double rnh_one = utils::numeric(FLERR,arg[11],false,lmp);
+  // double weight_one_low = utils::numeric(FLERR,arg[6],false,lmp);
+  // double sigma_one_low = utils::numeric(FLERR,arg[7],false,lmp);
+  // double coord_one_high = utils::numeric(FLERR,arg[8],false,lmp);
+  // double weight_one_high = utils::numeric(FLERR,arg[9],false,lmp);
+  // double sigma_one_high = utils::numeric(FLERR,arg[10],false,lmp);
+  double rnh_one = utils::numeric(FLERR,arg[6],false,lmp);
 
   if (sigmah_one <= 0.0)
     error->all(FLERR,"Incorrect args for pair coefficients");
 
 
   double cut_one = cut_global;
-  if (narg == 13) cut_one = utils::numeric(FLERR,arg[12],false,lmp);
+  if (narg == 8) cut_one = utils::numeric(FLERR,arg[7],false,lmp);
 
   int count = 0;
   for (int i = ilo; i <= ihi; i++) {
@@ -290,11 +302,11 @@ void PairCoordGaussCut::coeff(int narg, char **arg)
       cut[i][j] = cut_one;
 
       coord_low[i][j] = coord_one_low;
-      weight_low[i][j] = weight_one_low;
-      sigma_low[i][j] = sigma_one_low;
-      coord_high[i][j] = coord_one_high;
-      weight_high[i][j] = weight_one_high;
-      sigma_high[i][j] = sigma_one_high;
+      // weight_low[i][j] = weight_one_low;
+      // sigma_low[i][j] = sigma_one_low;
+      // coord_high[i][j] = coord_one_high;
+      // weight_high[i][j] = weight_one_high;
+      // sigma_high[i][j] = sigma_one_high;
 
       rnh[i][j] = rnh_one;
       types[i][j] = ilo;
@@ -344,11 +356,11 @@ double PairCoordGaussCut::init_one(int i, int j)
   offset[j][i] = offset[i][j];
   cut[j][i] = cut[i][j];
   coord_low[j][i] = coord_low[i][j];
-  coord_high[j][i] = coord_high[i][j];
-  weight_low[j][i] = weight_low[i][j];
-  weight_high[j][i] = weight_high[i][j];
-  sigma_low[j][i] = sigma_low[i][j];
-  sigma_high[j][i] = sigma_high[i][j];
+  // coord_high[j][i] = coord_high[i][j];
+  // weight_low[j][i] = weight_low[i][j];
+  // weight_high[j][i] = weight_high[i][j];
+  // sigma_low[j][i] = sigma_low[i][j];
+  // sigma_high[j][i] = sigma_high[i][j];
   rnh[j][i] = rnh[i][j];
 
   // compute I,J contribution to long-range tail correction
@@ -388,9 +400,9 @@ void PairCoordGaussCut::write_restart(FILE *fp)
         fwrite(&sigmah[i][j],sizeof(double),1,fp);
         fwrite(&cut[i][j],sizeof(double),1,fp);
         fwrite(&coord_low[i][j],sizeof(double),1,fp);
-        fwrite(&weight_low[i][j],sizeof(double),1,fp);
-        fwrite(&coord_high[i][j],sizeof(double),1,fp);
-        fwrite(&weight_high[i][j],sizeof(double),1,fp);
+        // fwrite(&weight_low[i][j],sizeof(double),1,fp);
+        // fwrite(&coord_high[i][j],sizeof(double),1,fp);
+        // fwrite(&weight_high[i][j],sizeof(double),1,fp);
         fwrite(&rnh[i][j],sizeof(double),1,fp);
         fwrite(&types[i][j],sizeof(double),1,fp);
         fwrite(&types[j][i],sizeof(double),1,fp);
@@ -420,9 +432,9 @@ void PairCoordGaussCut::read_restart(FILE *fp)
           utils::sfread(FLERR,&sigmah[i][j],sizeof(double),1,fp,nullptr,error);
           utils::sfread(FLERR,&cut[i][j],sizeof(double),1,fp,nullptr,error);
           utils::sfread(FLERR,&coord_low[i][j],sizeof(double),1,fp,nullptr,error);
-          utils::sfread(FLERR,&weight_low[i][j],sizeof(double),1,fp,nullptr,error);
-          utils::sfread(FLERR,&coord_high[i][j],sizeof(double),1,fp,nullptr,error);
-          utils::sfread(FLERR,&weight_high[i][j],sizeof(double),1,fp,nullptr,error);
+          // utils::sfread(FLERR,&weight_low[i][j],sizeof(double),1,fp,nullptr,error);
+          // utils::sfread(FLERR,&coord_high[i][j],sizeof(double),1,fp,nullptr,error);
+          // utils::sfread(FLERR,&weight_high[i][j],sizeof(double),1,fp,nullptr,error);
           utils::sfread(FLERR,&rnh[i][j],sizeof(double),1,fp,nullptr,error);
           utils::sfread(FLERR,&types[i][j],sizeof(int),1,fp,nullptr,error);
           utils::sfread(FLERR,&types[j][i],sizeof(int),1,fp,nullptr,error);
@@ -432,9 +444,9 @@ void PairCoordGaussCut::read_restart(FILE *fp)
         MPI_Bcast(&sigmah[i][j],1,MPI_DOUBLE,0,world);
         MPI_Bcast(&cut[i][j],1,MPI_DOUBLE,0,world);
         MPI_Bcast(&coord_low[i][j],1,MPI_DOUBLE,0,world);
-        MPI_Bcast(&weight_low[i][j],1,MPI_DOUBLE,0,world);
-        MPI_Bcast(&coord_high[i][j],1,MPI_DOUBLE,0,world);
-        MPI_Bcast(&weight_high[i][j],1,MPI_DOUBLE,0,world);
+        // MPI_Bcast(&weight_low[i][j],1,MPI_DOUBLE,0,world);
+        // MPI_Bcast(&coord_high[i][j],1,MPI_DOUBLE,0,world);
+        // MPI_Bcast(&weight_high[i][j],1,MPI_DOUBLE,0,world);
         MPI_Bcast(&rnh[i][j],1,MPI_DOUBLE,0,world);
         MPI_Bcast(&types[i][j],1,MPI_DOUBLE,0,world);
         MPI_Bcast(&types[j][i],1,MPI_DOUBLE,0,world);
@@ -488,7 +500,8 @@ void PairCoordGaussCut::write_data_all(FILE *fp)
 {
   for (int i = 1; i <= atom->ntypes; i++)
     for (int j = i; j <= atom->ntypes; j++)
-      fprintf(fp,"%d %d %g %g %g %g %g %g %g %g %g\n",i,j,hgauss[i][j],rmh[i][j],sigmah[i][j],cut[i][j],coord_low[i][j],weight_low[i][j],coord_low[i][j],weight_low[i][j],rnh[i][j]);
+      // fprintf(fp,"%d %d %g %g %g %g %g %g %g %g %g\n",i,j,hgauss[i][j],rmh[i][j],sigmah[i][j],cut[i][j],coord_low[i][j],weight_low[i][j],coord_low[i][j],weight_low[i][j],rnh[i][j]);
+      fprintf(fp,"%d %d %g %g %g %g %g %g\n",i,j,hgauss[i][j],rmh[i][j],sigmah[i][j],cut[i][j],coord_low[i][j],rnh[i][j]);
 }
 
 /* ---------------------------------------------------------------------- */

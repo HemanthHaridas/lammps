@@ -89,6 +89,7 @@ void PairCoordGaussCutOMP::eval(int iifrom, int iito, ThrData * const thr)
 
   // These are new variables required for coord/gauss/cut
   double factor_coord, coord_nr, coord_dr;
+  double scale_factor;
 
   // this is required for the coordination number calculation
   int n_ii = iito - iifrom + 1;
@@ -168,16 +169,30 @@ void PairCoordGaussCutOMP::eval(int iifrom, int iito, ThrData * const thr)
       jtype = type[j];
 
       if (rsq < cutsq[itype][jtype] && itype == types[itype][jtype] && jtype == types[jtype][itype] && itype <= jtype) {
+        r = sqrt(rsq);
+        rexp = (r-rmh[itype][jtype])/sigmah[itype][jtype];
 
+        if (coord_tmp[ii][jtype] <= coord_low[itype][jtype])
+        {
+          scale_factor = (coord_tmp[ii][jtype]/coord_low[itype][jtype])*hgauss[itype][jtype];
+          ugauss = (scale_factor/ sqrt(MY_2PI) / sigmah[itype][jtype]) * exp(-0.5*rexp*rexp);
+        }
+        else
+        {
+          double pre_exponent = (coord_tmp[ii][jtype] - coord_low[itype][jtype]);
+          scale_factor = exp(-1.0*pre_exponent*pre_exponent)*hgauss[itype][jtype];
+          ugauss = (scale_factor/ sqrt(MY_2PI) / sigmah[itype][jtype]) * exp(-0.5*rexp*rexp);
+        }
+        
         // calculate scaling factors
-        double pre_exponent_one = (coord_tmp[ii][jtype] - coord_low[itype][jtype])/sigma_low[itype][jtype];
-        double pre_exponent_two = (coord_tmp[ii][jtype] - coord_high[itype][jtype])/sigma_high[itype][jtype];
-        double scale_factor_one = exp(-0.5*pre_exponent_one*pre_exponent_one)*weight_low[itype][jtype];
-        double scale_factor_two = exp(-0.5*pre_exponent_two*pre_exponent_two)*weight_high[itype][jtype];
-        double scale_factor = (scale_factor_one + scale_factor_two)*hgauss[itype][jtype];
+        // double pre_exponent_one = (coord_tmp[ii][jtype] - coord_low[itype][jtype])/sigma_low[itype][jtype];
+        // double pre_exponent_two = (coord_tmp[ii][jtype] - coord_high[itype][jtype])/sigma_high[itype][jtype];
+        // double scale_factor_one = exp(-0.5*pre_exponent_one*pre_exponent_one)*weight_low[itype][jtype];
+        // double scale_factor_two = exp(-0.5*pre_exponent_two*pre_exponent_two)*weight_high[itype][jtype];
+        // double scale_factor = (scale_factor_one + scale_factor_two)*hgauss[itype][jtype];
 
         // now calculate energy
-        ugauss = (scale_factor/ sqrt(MY_2PI) / sigmah[i][j]) * exp(-0.5*rexp*rexp);
+        // ugauss = (scale_factor/ sqrt(MY_2PI) / sigmah[i][j]) * exp(-0.5*rexp*rexp);
         fpair = factor_lj*rexp/r*ugauss/sigmah[itype][jtype];
 
         fxtmp += delx*fpair;

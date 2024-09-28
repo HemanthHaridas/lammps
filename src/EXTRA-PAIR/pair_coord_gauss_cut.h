@@ -56,9 +56,10 @@ class PairCoordGaussCut : public Pair {
   double **pgauss, **offset;
 
 // Required for coordination number
-  double **coord_low, **coord_high; 
-  double **weight_low, **weight_high;
-  double **sigma_low, **sigma_high; 
+  double **coord_low; 
+  // double **coord_high; 
+  // double **weight_low, **weight_high;
+  // double **sigma_low, **sigma_high; 
   double **rnh,  **types;
   void allocate();
 };

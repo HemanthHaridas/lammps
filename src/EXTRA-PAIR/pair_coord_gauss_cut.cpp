@@ -313,7 +313,7 @@ void PairCoordGaussCut::coeff(int narg, char **arg)
       types[j][i] = jlo;
       setflag[i][j] = 1;
 
-      // std::cout << i << "\t" << j << "\t" << hgauss[i][j] << "\t" << sigmah[i][j] << "\t" << rmh[i][j] << "\t" << cut[i][j] << "\t" << coord_low[i][j] << "\t" << coord_high[i][j] << "\t" << rnh[i][j] << "\t" << types[i][j] << "\t" << types[j][i] << "\n";
+      std::cout << i << "\t" << j << "\t" << hgauss[i][j] << "\t" << sigmah[i][j] << "\t" << rmh[i][j] << "\t" << cut[i][j] << "\t" << coord_low[i][j] << "\t" << rnh[i][j] << "\t" << types[i][j] << "\t" << types[j][i] << "\n";
       count++;
     }
   }
